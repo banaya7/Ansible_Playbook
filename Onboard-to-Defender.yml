@@ -48,6 +48,8 @@
 
     - name: Copy onboarding file
       copy:
+      # NOTE: You must manually download this onboarding script from the Microsoft 365 Defender portal.
+# Do not publish or redistribute it
         src: ./MicrosoftDefenderATPOnboardingLinuxServer.py
         dest: /tmp/
  
