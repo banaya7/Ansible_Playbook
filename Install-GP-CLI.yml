@@ -1,0 +1,28 @@
+- name: Install GlobalProtect CLI
+  hosts: test
+  become: true
+  tasks:
+
+    - name: Copy GlobalProtect archive to remote
+      copy:
+        src: ./PanGPLinux-6.2.0-c10-with-deps.tgz
+        dest: /tmp/PanGPLinux-6.2.0-c10-with-deps.tgz
+        mode: '0644'
+
+    - name: Extract outer GlobalProtect archive
+      ansible.builtin.unarchive:
+        src: /tmp/PanGPLinux-6.2.0-c10-with-deps.tgz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Extract inner GlobalProtect_UI_tar archive
+      ansible.builtin.unarchive:
+        src: /tmp/GlobalProtect_UI_tar-6.2.0.1-265.tgz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Run GlobalProtect CLI installer
+      ansible.builtin.command: bash install.sh
+      args:
+        chdir: /tmp
+      become: true

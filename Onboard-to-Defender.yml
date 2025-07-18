@@ -1,0 +1,87 @@
+---
+- name: Install Microsoft Defender ATP on Ubuntu
+  hosts: test
+  become: yes
+  vars:
+    ms_channel: prod
+  tasks:
+    - name: Fix broken packages if needed
+      shell: apt --fix-broken install -y
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - libplist-utils
+          - gpg
+          - apt-transport-https
+        state: present
+        update_cache: yes
+
+    - name: Download Microsoft repo list
+      get_url:
+        url: "https://packages.microsoft.com/config/{{ ansible_distribution | lower }}/{{ ansible_distribution_version }}/{{ ms_channel }}.list"
+        dest: "/etc/apt/sources.list.d/microsoft-{{ ms_channel }}.list"
+        mode: '0644'
+
+    - name: Add Microsoft GPG key
+      shell: |
+        curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/microsoft-prod.gpg
+        mv /tmp/microsoft-prod.gpg /usr/share/keyrings/microsoft-prod.gpg
+      args:
+        executable: /bin/bash
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install mdatp
+      apt:
+        name: mdatp
+        state: present
+
+    - name: Install mdatp explicitly for codename (if needed)
+      apt:
+        name: mdatp
+        default_release: "{{ ansible_distribution_release }}"
+        state: present
+
+    - name: Copy onboarding file
+      copy:
+        src: ./MicrosoftDefenderATPOnboardingLinuxServer.py
+        dest: /tmp/
+ 
+
+    - name: Run onboarding script
+      command: python3 /tmp/MicrosoftDefenderATPOnboardingLinuxServer.py
+      args:
+        chdir: /tmp/
+
+    - name: Verify org_id
+      command: mdatp health --field org_id
+      register: org_id_output
+
+    - name: Show org_id
+      debug:
+        var: org_id_output.stdout
+
+    - name: Enable real-time protection
+      command: mdatp config real-time-protection --value enabled
+      register: rtp_result
+      changed_when: "'Configuration not updated' not in rtp_result.stdout"
+      failed_when: >
+        rtp_result.rc != 0 and
+        'Configuration not updated' not in rtp_result.stdout
+        
+    - name: Run EICAR test and list threats
+      shell: |
+        curl -o /tmp/eicar.com.txt https://secure.eicar.org/eicar.com.txt
+        sleep 5
+        mdatp threat list
+      register: eicar_test_result
+      changed_when: false
+      failed_when: false
+
+    - name: Show Defender threat list result
+      debug:
+        msg: "{{ eicar_test_result.stdout_lines }}"
