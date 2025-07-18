@@ -5,8 +5,8 @@
 
     - name: Copy GlobalProtect archive to remote
       copy:
-      # NOTE: You must manually download this onboarding script from the Microsoft 365 Defender portal.
-# Do not publish or redistribute it
+      # NOTE: You must manually download 'PanGPLinux-6.2.0-c10-with-deps.tgz' from the Palo Alto Networks support portal.
+# Do not publish or share this file publicly.
         src: ./PanGPLinux-6.2.0-c10-with-deps.tgz
         dest: /tmp/PanGPLinux-6.2.0-c10-with-deps.tgz
         mode: '0644'
